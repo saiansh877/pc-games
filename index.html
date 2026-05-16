@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="msvalidate.01" content="B854B82A80D01761EF6D0992D8D472FA" />
+<meta charset="UTF-8" />
+<meta name="google-site-verification" content="jscUdQXSDiJi_bAZ4iye1H8ZNpz/>
+<title>Can My PC Run It? | Accurate Game FPS Checker</title>
+<meta name="description" content="Check if your PC can run ANY PC game with improved accuracy using GPU benchmarks, RAM checks, and game type analysis." />
+<meta name="keywords" content="can my pc run it, game fps checker, pc requirements, low end pc games, intel hd fps, gta v fps, valorant fps, gaming laptop checker, pc performance test" />
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body{background:#020617;}
+</style>
+
+</head>
+<body class="text-white min-h-screen">
+
+<div class="max-w-7xl mx-auto p-6">
+
+    <div class="text-center mb-10">
+        <h1 class="text-5xl font-bold mb-3">🎮 Can My PC Run It?</h1>
+        <p class="text-gray-400">Now with improved GPU + game-type based accuracy (AAA / Indie / Esports).</p>
+    </div>
+
+    <!-- SPECS -->
+    <div class="bg-slate-900 p-6 rounded-3xl mb-8">
+        <h2 class="text-2xl font-bold mb-4">💻 Your PC Specs</h2>
+
+        <div class="grid md:grid-cols-3 gap-4">
+            <input id="ram" type="number" placeholder="RAM (GB)" class="p-3 rounded-xl bg-slate-800" />
+            <input id="cpu" type="text" placeholder="CPU (i5 / Ryzen 5)" class="p-3 rounded-xl bg-slate-800" />
+            <input id="gpu" type="text" placeholder="GPU (GTX 1650 / Intel HD)" class="p-3 rounded-xl bg-slate-800" />
+        </div>
+    </div>
+
+    <!-- SEARCH -->
+    <div class="bg-slate-900 p-6 rounded-3xl mb-8">
+        <h2 class="text-2xl font-bold mb-4">🔍 Search ANY Game</h2>
+
+        <div class="flex flex-col md:flex-row gap-3">
+            <input id="gameSearch" class="flex-1 p-4 rounded-xl bg-slate-800" placeholder="Search GTA V, Elden Ring, Valorant..." />
+            <button onclick="searchGames()" class="bg-green-500 px-6 py-4 rounded-xl font-bold">Search</button>
+        </div>
+    </div>
+
+    <div id="gamesContainer" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+</div>
+
+<script>
+
+const API_KEY = "eedd2236ba8d42fda34a8f73b59f083d";
+
+// ---------------- GPU BENCHMARK SYSTEM ----------------
+function getGPUScore(gpu){
+    gpu = gpu.toLowerCase();
+
+    if(gpu.includes("intel hd")) return 0.6;
+    if(gpu.includes("uhd")) return 0.8;
+
+    if(gpu.includes("750")) return 1.2;
+    if(gpu.includes("1050")) return 2.0;
+    if(gpu.includes("1650")) return 2.8;
+    if(gpu.includes("1060")) return 3.0;
+
+    if(gpu.includes("1660")) return 3.3;
+    if(gpu.includes("2060")) return 3.8;
+
+    if(gpu.includes("3060")) return 4.5;
+    if(gpu.includes("3070")) return 5.0;
+
+    if(gpu.includes("4060")) return 5.3;
+    if(gpu.includes("4070")) return 5.8;
+
+    return 2;
+}
+
+// ---------------- GAME TYPE ESTIMATION ----------------
+function getGameDifficulty(game){
+    let text = (game.name + " " + (game.genres?.map(g=>g.name).join(" ") || "")).toLowerCase();
+
+    if(text.includes("indie")) return 1.5;
+    if(text.includes("pixel")) return 1.2;
+
+    if(text.includes("valorant") || text.includes("cs") || text.includes("fortnite")) return 2.0;
+
+    if(text.includes("gta") || text.includes("minecraft")) return 3.0;
+
+    if(text.includes("elden") || text.includes("cyberpunk") || text.includes("red dead")) return 5.0;
+
+    // fallback using rating
+    return Math.max(2, game.rating || 3);
+}
+
+// ---------------- FPS MODEL (IMPROVED) ----------------
+function estimateFPS(gpuScore, ram, gameScore){
+
+    let power = gpuScore * 18;
+
+    // RAM bottleneck
+    if(ram < 8) power -= 8;
+    if(ram < 6) power -= 15;
+
+    // game difficulty impact
+    power -= (gameScore * 3);
+
+    if(power < 10) return "10–20 FPS";
+    if(power < 20) return "20–35 FPS";
+    if(power < 30) return "35–55 FPS";
+    return "60+ FPS";
+}
+
+// ---------------- COMPATIBILITY ----------------
+function getStatus(user, game){
+    if(user >= game) return "<span class='text-green-400 font-bold'>✅ Smooth</span>";
+    if(user + 1 >= game) return "<span class='text-yellow-400 font-bold'>⚠️ Playable Low</span>";
+    return "<span class='text-red-400 font-bold'>❌ Struggles</span>";
+}
+
+// ---------------- MAIN SEARCH ----------------
+async function searchGames(){
+
+    const q = document.getElementById("gameSearch").value;
+    const gpu = document.getElementById("gpu").value;
+    const ram = parseInt(document.getElementById("ram").value || 8);
+
+    const box = document.getElementById("gamesContainer");
+
+    if(!q) return alert("Enter a game name");
+
+    box.innerHTML = "<p class='text-gray-400'>Searching games...</p>";
+
+    try{
+        const res = await fetch(`https://api.rawg.io/api/games?key=${API_KEY}&search=${q}&page_size=12`);
+        const data = await res.json();
+
+        box.innerHTML = "";
+
+        const gpuScore = getGPUScore(gpu);
+
+        data.results.forEach(game => {
+
+            const gameScore = getGameDifficulty(game);
+            const fps = estimateFPS(gpuScore, ram, gameScore);
+            const status = getStatus(gpuScore, gameScore);
+
+            box.innerHTML += `
+            <div class='bg-slate-900 rounded-3xl overflow-hidden shadow-xl hover:scale-105 transition'>
+                <img src='${game.background_image}' class='h-52 w-full object-cover'/>
+                <div class='p-5'>
+                    <h2 class='text-xl font-bold'>${game.name}</h2>
+                    <p class='text-gray-400'>⭐ ${game.rating}</p>
+                    <p class='text-gray-400 mb-2'>📅 ${game.released}</p>
+                    <p class='mb-2'>${status}</p>
+                    <p class='text-blue-400 font-bold'>FPS: ${fps}</p>
+                </div>
+            </div>`;
+        });
+
+    }catch(e){
+        box.innerHTML = "<p class='text-red-400'>API error - try again</p>";
+    }
+}
+
+</script>
+
+</body>
+</html>
